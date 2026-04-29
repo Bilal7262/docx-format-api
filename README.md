@@ -44,9 +44,56 @@ cd php
 
 # 2. Install dependencies
 composer install
+```
 
-# 3. Run (built-in server)
+---
+
+## Run Scripts
+
+### 1. Start web server
+
+```bash
+composer serve
+# or directly:
 php -S localhost:8080 index.php
+```
+
+Server starts at `http://localhost:8080` — visiting it in a browser will download a sample APA7 `.docx`.
+
+---
+
+### 2. Generate `.docx` files from command line
+
+```bash
+# Generate all 4 styles at once (saves output_APA7.docx, output_MLA9.docx, etc.)
+composer generate
+
+# Or with php directly:
+php scripts/generate.php
+```
+
+```bash
+# Generate a single style
+php scripts/generate.php APA7
+php scripts/generate.php MLA9
+php scripts/generate.php CHICAGO
+php scripts/generate.php HARVARD
+```
+
+```bash
+# Generate with a custom output filename
+php scripts/generate.php APA7 my_essay.docx
+```
+
+**Output files are saved in the `php/` directory.**
+
+---
+
+### 3. Download via curl (when server is running)
+
+```bash
+# Download sample APA7 docx
+curl http://localhost:8080 -o essay.docx
 ```
 
 ---
