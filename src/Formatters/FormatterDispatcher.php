@@ -12,10 +12,10 @@ use App\Styles;
 class FormatterDispatcher
 {
     private static array $builders = [
-        'APA7'    => [Apa7::class,     'build'],
-        'MLA9'    => [Mla9::class,     'build'],
-        'CHICAGO' => [Chicago::class,  'build'],
-        'HARVARD' => [Harvard::class,  'build'],
+        'APA 7'              => [Apa7::class,    'build'],
+        'MLA 9'              => [Mla9::class,    'build'],
+        'Chicago Author-Date'=> [Chicago::class, 'build'],
+        'Harvard'            => [Harvard::class, 'build'],
     ];
 
     public static function formatEssay(EssayJSON $essay, string $styleKey): string

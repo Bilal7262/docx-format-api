@@ -131,10 +131,10 @@ textarea{resize:vertical;min-height:120px}
 
     <label>citation_style</label>
     <select id="f-style">
-      <option value="APA7">APA7 — APA 7th Edition</option>
-      <option value="MLA9">MLA9 — MLA 9th Edition</option>
-      <option value="CHICAGO">CHICAGO — Chicago Author-Date</option>
-      <option value="HARVARD">HARVARD — Harvard</option>
+      <option value="APA 7">APA 7</option>
+      <option value="MLA 9">MLA 9</option>
+      <option value="Chicago Author-Date">Chicago Author-Date</option>
+      <option value="Harvard">Harvard</option>
     </select>
 
     <label>title</label>

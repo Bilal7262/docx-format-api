@@ -13,7 +13,7 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 use App\Formatters\FormatterDispatcher;
 use App\Models\FormatRequest;
 
-$allStyles = ['APA7', 'MLA9', 'CHICAGO', 'HARVARD'];
+$allStyles = ['APA 7', 'MLA 9', 'Chicago Author-Date', 'Harvard'];
 
 $sampleData = [
     'title'         => 'The Effects of Social Media on Mental Health',
@@ -49,12 +49,12 @@ $sampleData = [
 $requestedStyle = $argv[1] ?? null;
 $outputPath     = $argv[2] ?? null;
 
-if ($requestedStyle !== null && !in_array(strtoupper($requestedStyle), $allStyles, true)) {
+if ($requestedStyle !== null && !in_array($requestedStyle, $allStyles, true)) {
     echo "Error: unknown style '{$requestedStyle}'. Valid options: " . implode(', ', $allStyles) . "\n";
     exit(1);
 }
 
-$stylesToRun = $requestedStyle ? [strtoupper($requestedStyle)] : $allStyles;
+$stylesToRun = $requestedStyle ? [$requestedStyle] : $allStyles;
 
 foreach ($stylesToRun as $style) {
     $data            = array_merge($sampleData, ['citation_style' => $style]);

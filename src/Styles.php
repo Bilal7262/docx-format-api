@@ -5,7 +5,7 @@ namespace App;
 class Styles
 {
     public const STYLES = [
-        'APA7' => [
+        'APA 7' => [
             'font_family'              => 'Times New Roman',
             'font_size'                => 12,
             'margin_inches'            => 1.0,
@@ -23,7 +23,7 @@ class Styles
             'citation_name'            => 'APA 7th Edition',
             'in_text_example'          => '(Author, Year) or (Author, Year, p. #) — e.g., (Smith, 2023, p. 14)',
         ],
-        'MLA9' => [
+        'MLA 9' => [
             'font_family'              => 'Times New Roman',
             'font_size'                => 12,
             'margin_inches'            => 1.0,
@@ -41,7 +41,7 @@ class Styles
             'citation_name'            => 'MLA 9th Edition',
             'in_text_example'          => '(Author Page#) — no comma, e.g., (Smith 23)',
         ],
-        'CHICAGO' => [
+        'Chicago Author-Date' => [
             'font_family'              => 'Times New Roman',
             'font_size'                => 12,
             'margin_inches'            => 1.0,
@@ -59,7 +59,7 @@ class Styles
             'citation_name'            => 'Chicago Author-Date',
             'in_text_example'          => '(Author Year, Page#) — e.g., (Smith 2023, 14)',
         ],
-        'HARVARD' => [
+        'Harvard' => [
             'font_family'              => 'Times New Roman',
             'font_size'                => 12,
             'margin_inches'            => 1.0,
