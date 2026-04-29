@@ -27,10 +27,10 @@ class Chicago
         $section = $phpWord->addSection();
         Base::setupSection($section, $config);
 
-        // Suppress page number on the title page; default header shows it on all other pages
-        $section->getStyle()->setDifferentFirstPage(true);
-        $section->addHeader('first'); // empty first-page header
-        Base::addPageNumbers($section, $config);
+        // Adding a 'first' type header tells PHPWord to enable <w:titlePg/>,
+        // which suppresses the page number on the title page automatically.
+        $section->addHeader('first'); // empty — no page number on title page
+        Base::addPageNumbers($section, $config); // page number on all other pages
 
         self::titlePage($section, $essay, $config);
         $section->addPageBreak();

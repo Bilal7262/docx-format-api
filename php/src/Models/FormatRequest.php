@@ -4,15 +4,15 @@ namespace App\Models;
 
 class FormatRequest
 {
-    public readonly string  $citationStyle;
-    public readonly string  $title;
-    public readonly string  $bodyMarkdown;
-    public readonly array   $references;
-    public readonly ?string $authorName;
-    public readonly ?string $institution;
-    public readonly ?string $course;
-    public readonly ?string $instructor;
-    public readonly ?string $date;
+    public string  $citationStyle;
+    public string  $title;
+    public string  $bodyMarkdown;
+    public array   $references;
+    public ?string $authorName;
+    public ?string $institution;
+    public ?string $course;
+    public ?string $instructor;
+    public ?string $date;
 
     public function __construct(array $data)
     {
@@ -30,14 +30,14 @@ class FormatRequest
     public function toEssayJson(): EssayJSON
     {
         return new EssayJSON(
-            title:                  $this->title,
-            bodyMarkdown:           $this->bodyMarkdown,
-            references:             $this->references,
-            authorNamePlaceholder:  $this->authorName   ?? '[Student Name]',
-            coursePlaceholder:      $this->course       ?? '[Course]',
-            instructorPlaceholder:  $this->instructor   ?? '[Instructor]',
-            institutionPlaceholder: $this->institution  ?? '[University]',
-            date:                   $this->date         ?? '',
+            $this->title,
+            $this->bodyMarkdown,
+            $this->references,
+            $this->authorName   ?? '[Student Name]',
+            $this->course       ?? '[Course]',
+            $this->instructor   ?? '[Instructor]',
+            $this->institution  ?? '[University]',
+            $this->date         ?? ''
         );
     }
 
