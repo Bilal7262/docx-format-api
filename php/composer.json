@@ -1,0 +1,13 @@
+{
+    "name": "formatted-docx/formatter",
+    "description": "Academic essay formatter for APA7, MLA9, Chicago, Harvard citation styles",
+    "require": {
+        "php": ">=8.1",
+        "phpoffice/phpword": "^1.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}
