@@ -1,6 +1,10 @@
 # docx-formatter
 
-A FastAPI service that converts essay content into properly formatted `.docx` files supporting APA7, MLA9, Chicago, and Harvard citation styles.
+A service that converts essay content into properly formatted `.docx` files supporting APA7, MLA9, Chicago, and Harvard citation styles.
+
+Available in two implementations:
+- **Python** (FastAPI) — `main` branch
+- **PHP** — `php` branch
 
 ---
 
@@ -8,17 +12,19 @@ A FastAPI service that converts essay content into properly formatted `.docx` fi
 
 - **4 citation styles** — APA 7th Edition, MLA 9th Edition, Chicago Author-Date, Harvard
 - **Style-accurate formatting** — title pages, page numbers, heading levels, hanging indents, line spacing per style rules
-- **Single endpoint** — send content, get a download-ready `.docx` back
-- **No dependencies on external APIs** — pure formatting service
+- **Inline markdown** — `**bold**`, `*italic*`, `***bold+italic***` in body text
+- **No external APIs** — pure formatting service
 
 ---
 
 ## Project Structure
 
+### Python (main branch)
+
 ```
 docx-formatter/
 ├── main.py              # FastAPI app
-├── models.py            # Request/response schemas
+├── models.py            # Request/response schemas (Pydantic)
 ├── styles.py            # Citation style configs
 ├── requirements.txt
 └── formatters/
@@ -30,9 +36,32 @@ docx-formatter/
     └── harvard.py       # Harvard
 ```
 
+### PHP (php branch)
+
+```
+php/
+├── composer.json        # phpoffice/phpword dependency
+├── index.php            # Example entry point
+└── src/
+    ├── Styles.php       # Citation style configs
+    ├── Models/
+    │   ├── Reference.php
+    │   ├── EssayJSON.php
+    │   └── FormatRequest.php   # Validation
+    └── Formatters/
+        ├── Base.php            # Shared utilities
+        ├── Apa7.php            # APA 7th Edition
+        ├── Mla9.php            # MLA 9th Edition
+        ├── Chicago.php         # Chicago Author-Date
+        ├── Harvard.php         # Harvard
+        └── FormatterDispatcher.php
+```
+
 ---
 
 ## Setup
+
+### Python
 
 ```bash
 # 1. Create virtual environment
@@ -51,11 +80,24 @@ python main.py
 
 Server starts at `http://localhost:8000`
 
+### PHP
+
+```bash
+# 1. Go into the php directory
+cd php
+
+# 2. Install dependencies
+composer install
+
+# 3. Run (built-in server)
+php -S localhost:8080 index.php
+```
+
 ---
 
 ## API
 
-### `POST /format`
+### Python — `POST /format`
 
 Receives essay content and returns a formatted `.docx` file as a download.
 
@@ -96,9 +138,9 @@ Receives essay content and returns a formatted `.docx` file as a download.
 
 ---
 
-### `GET /options`
+### Python — `GET /options`
 
-Returns valid values for the `citation_style` field.
+Returns valid values for `citation_style`.
 
 ```json
 {
@@ -106,10 +148,36 @@ Returns valid values for the `citation_style` field.
 }
 ```
 
-### `GET /health`
+### Python — `GET /health`
 
 ```json
 { "status": "ok" }
+```
+
+### Python — Interactive Docs
+
+```
+http://localhost:8000/docs
+```
+
+---
+
+### PHP — Usage
+
+Edit `php/index.php` and set your data array, or call `FormatterDispatcher::formatEssay()` directly in your own PHP code:
+
+```php
+use App\Formatters\FormatterDispatcher;
+use App\Models\FormatRequest;
+
+$request   = new FormatRequest($data);   // validates input
+$essay     = $request->toEssayJson();
+$docxBytes = FormatterDispatcher::formatEssay($essay, $request->citationStyle);
+
+// Stream as download
+header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+header('Content-Disposition: attachment; filename="essay.docx"');
+echo $docxBytes;
 ```
 
 ---
@@ -125,8 +193,11 @@ Returns valid values for the `citation_style` field.
 
 ---
 
-## Interactive Docs
+## Dependencies
 
-```
-http://localhost:8000/docs
-```
+| Implementation | Library | Purpose |
+|---|---|---|
+| Python | `python-docx` | `.docx` generation |
+| Python | `pydantic` | Request validation |
+| Python | `fastapi` + `uvicorn` | HTTP server |
+| PHP | `phpoffice/phpword` | `.docx` generation |
