@@ -50,10 +50,17 @@ if ($method === 'POST' && $path === '/format') {
         exit;
     }
 
-    $filename = strtolower($request->citationStyle) . '_essay.docx';
+    $slug     = preg_replace('/[^a-z0-9]+/', '_', strtolower($request->citationStyle));
+    $filename = $slug . '_essay.docx';
+
+    // Clear any buffered output so nothing is prepended to the binary ZIP stream.
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+
     header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Length: ' . strlen($docxBytes));
+    header('Content-Length: ' . mb_strlen($docxBytes, '8bit'));
     echo $docxBytes;
     exit;
 }
@@ -140,8 +147,32 @@ textarea{resize:vertical;min-height:120px}
     <label>title</label>
     <input id="f-title" type="text" value="The Effects of Social Media on Mental Health">
 
-    <label>body_markdown <span class="opt">— ## heading, ### subheading, **bold**, *italic*</span></label>
-    <textarea id="f-body">## Introduction
+    <label>body_markdown</label>
+    <div style="background:#f0f4ff;border:1px solid #d0d8f0;border-radius:5px;padding:10px 14px;margin-bottom:8px;font-size:.82rem;line-height:1.7">
+      <strong style="display:block;margin-bottom:4px;color:#444">Markdown syntax:</strong>
+      <table style="border-collapse:collapse;width:100%">
+        <tr><td style="padding:1px 10px 1px 0;font-family:monospace;color:#1a1a2e;white-space:nowrap">#&nbsp;Title:&nbsp;Subtitle</td><td style="color:#555">Document title (subtitle after <code>:</code> is optional)</td></tr>
+        <tr><td style="padding:1px 10px 1px 0;font-family:monospace;color:#1a1a2e;white-space:nowrap">##&nbsp;Heading</td><td style="color:#555">Level 1 heading</td></tr>
+        <tr><td style="padding:1px 10px 1px 0;font-family:monospace;color:#1a1a2e;white-space:nowrap">###&nbsp;Heading</td><td style="color:#555">Level 2 heading</td></tr>
+        <tr><td style="padding:1px 10px 1px 0;font-family:monospace;color:#1a1a2e;white-space:nowrap">####&nbsp;Heading</td><td style="color:#555">Level 3 heading</td></tr>
+        <tr><td style="padding:1px 10px 1px 0;font-family:monospace;color:#1a1a2e;white-space:nowrap">#####&nbsp;Heading</td><td style="color:#555">Level 4 heading</td></tr>
+        <tr><td style="padding:1px 10px 1px 0;font-family:monospace;color:#1a1a2e;white-space:nowrap">######&nbsp;Heading</td><td style="color:#555">Level 5 heading</td></tr>
+        <tr><td style="padding:1px 10px 1px 0;font-family:monospace;color:#1a1a2e">**bold**</td><td style="color:#555">Bold text</td></tr>
+        <tr><td style="padding:1px 10px 1px 0;font-family:monospace;color:#1a1a2e">*italic*</td><td style="color:#555">Italic text</td></tr>
+        <tr><td style="padding:1px 10px 1px 0;font-family:monospace;color:#1a1a2e">***bold italic***</td><td style="color:#555">Bold + italic text</td></tr>
+      </table>
+      <div style="margin-top:6px;border-top:1px solid #d0d8f0;padding-top:6px;color:#666">
+        <strong>Heading styles per citation:</strong><br>
+        <span style="color:#555">
+          <b>MLA 9</b> — L1: bold left &nbsp;·&nbsp; L2: italic left &nbsp;·&nbsp; L3: centered bold &nbsp;·&nbsp; L4: centered italic &nbsp;·&nbsp; L5: underlined left<br>
+          <b>APA 7</b> — L1: centered bold &nbsp;·&nbsp; L2: left bold &nbsp;·&nbsp; L3: left bold+italic &nbsp;·&nbsp; L4: indented bold &nbsp;·&nbsp; L5: indented bold+italic<br>
+          <b>Chicago / Harvard</b> — L1: centered bold &nbsp;·&nbsp; L2: left bold &nbsp;·&nbsp; L3: left italic &nbsp;·&nbsp; L4: centered italic &nbsp;·&nbsp; L5: underlined left
+        </span>
+      </div>
+    </div>
+    <textarea id="f-body"># The Effects of Social Media on Mental Health: A Review of Current Evidence
+
+## Introduction
 
 Social media has become an integral part of modern life (Smith, 2023). Platforms such as Instagram and Twitter are used by **billions** of people daily.
 
@@ -153,6 +184,18 @@ Research suggests that *excessive* use of social media is linked to anxiety and 
 
 Jones (2022) found a ***strong correlation*** between screen time and poor sleep quality.
 
+#### Methodology
+
+Studies used both *quantitative* and **qualitative** approaches to measure social media exposure and mental health outcomes.
+
+##### Sample Demographics
+
+Participants ranged from ages 13 to 35, with data collected across **12 countries** over a three-year period.
+
+###### Data Collection Tools
+
+Researchers employed validated instruments such as the *PHQ-9* and the ***Social Media Use Integration Scale***.
+
 ## Conclusion
 
 Further longitudinal studies are needed to establish causation.</textarea>
@@ -161,12 +204,12 @@ Further longitudinal studies are needed to establish causation.</textarea>
     <div id="refs-container">
       <div class="ref-row">
         <input type="text" placeholder="id" value="smith2023">
-        <input type="text" placeholder="formatted citation" value="Smith, J. A. (2023). The digital generation. Journal of Youth Studies, 45(2), 112–130.">
+        <input type="text" placeholder="formatted citation" value="Smith, J. A. (2023). The digital generation. *Journal of Youth Studies*, 45(2), 112–130.">
         <button onclick="removeRef(this)">✕</button>
       </div>
       <div class="ref-row">
         <input type="text" placeholder="id" value="jones2022">
-        <input type="text" placeholder="formatted citation" value="Jones, M. (2022). Screen time and sleep. Health Psychology Review, 16(1), 45–60.">
+        <input type="text" placeholder="formatted citation" value="Jones, M. (2022). Screen time and sleep. *Health Psychology Review*, 16(1), 45–60.">
         <button onclick="removeRef(this)">✕</button>
       </div>
     </div>

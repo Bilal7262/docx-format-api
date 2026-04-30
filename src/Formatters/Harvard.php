@@ -69,20 +69,40 @@ class Harvard
 
     public static function heading(Section $section, string $text, int $level, array $config): void
     {
-        // Centered bold for level 1, left-aligned bold for level 2
-        $alignment = $level === 1 ? 'center' : 'left';
+        if ($level === 0) {
+            Base::addDocumentTitle($section, $text, $config, true); // Harvard: title bold
+            return;
+        }
 
-        $textRun = $section->addTextRun([
-            'alignment'   => $alignment,
+        $base = [
             'lineHeight'  => 2.0,
             'spaceBefore' => 0,
             'spaceAfter'  => 0,
             'indentation' => ['firstLine' => 0],
-        ]);
+        ];
+
+        // Harvard heading levels:
+        // L1 ##:    centered, bold
+        // L2 ###:   left, bold
+        // L3 ####:  left, italic
+        // L4 #####: centered, italic
+        // L5 ######: underlined, left
+        $specs = [
+            1 => ['alignment' => 'center', 'bold' => true,  'italic' => false, 'underline' => false],
+            2 => ['alignment' => 'left',   'bold' => true,  'italic' => false, 'underline' => false],
+            3 => ['alignment' => 'left',   'bold' => false, 'italic' => true,  'underline' => false],
+            4 => ['alignment' => 'center', 'bold' => false, 'italic' => true,  'underline' => false],
+            5 => ['alignment' => 'left',   'bold' => false, 'italic' => false, 'underline' => true],
+        ];
+        $s = $specs[$level] ?? $specs[5];
+
+        $textRun = $section->addTextRun(array_merge($base, ['alignment' => $s['alignment']]));
         $textRun->addText($text, [
-            'name' => $config['font_family'],
-            'size' => $config['font_size'],
-            'bold' => true,
+            'name'      => $config['font_family'],
+            'size'      => $config['font_size'],
+            'bold'      => $s['bold'],
+            'italic'    => $s['italic'],
+            'underline' => $s['underline'] ? 'single' : 'none',
         ]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Formatters;
 
 use App\Models\EssayJSON;
 use App\Styles;
+use PhpOffice\PhpWord\Settings;
 
 /**
  * Dispatcher — routes formatEssay() to the correct style class.
@@ -20,6 +21,8 @@ class FormatterDispatcher
 
     public static function formatEssay(EssayJSON $essay, string $styleKey): string
     {
+        Settings::setOutputEscapingEnabled(true);
+
         $config  = Styles::STYLES[$styleKey];
         $builder = self::$builders[$styleKey];
         return call_user_func($builder, $essay, $config);

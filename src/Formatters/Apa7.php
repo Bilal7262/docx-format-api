@@ -69,21 +69,45 @@ class Apa7
 
     public static function heading(Section $section, string $text, int $level, array $config): void
     {
-        // Level 1 (##) — centered, bold
-        // Level 2 (###) — left-aligned, bold
-        $alignment = $level === 1 ? 'center' : 'left';
+        if ($level === 0) {
+            Base::addDocumentTitle($section, $text, $config, true); // APA: title bold
+            return;
+        }
 
-        $textRun = $section->addTextRun([
-            'alignment'   => $alignment,
+        $base = [
             'lineHeight'  => 2.0,
             'spaceBefore' => 0,
             'spaceAfter'  => 0,
             'indentation' => ['firstLine' => 0],
-        ]);
+        ];
+
+        // APA 7 heading levels (official spec):
+        // L1 ##:    centered, bold
+        // L2 ###:   left, bold
+        // L3 ####:  left, bold italic
+        // L4 #####: indented 0.5", bold
+        // L5 ######: indented 0.5", bold italic
+        $indent = \PhpOffice\PhpWord\Shared\Converter::inchToTwip(0.5);
+        $specs = [
+            1 => ['alignment' => 'center', 'bold' => true,  'italic' => false, 'indent' => 0],
+            2 => ['alignment' => 'left',   'bold' => true,  'italic' => false, 'indent' => 0],
+            3 => ['alignment' => 'left',   'bold' => true,  'italic' => true,  'indent' => 0],
+            4 => ['alignment' => 'left',   'bold' => true,  'italic' => false, 'indent' => $indent],
+            5 => ['alignment' => 'left',   'bold' => true,  'italic' => true,  'indent' => $indent],
+        ];
+        $s = $specs[$level] ?? $specs[5];
+
+        $paraStyle = array_merge($base, ['alignment' => $s['alignment']]);
+        if ($s['indent'] > 0) {
+            $paraStyle['indentation'] = ['left' => $s['indent'], 'firstLine' => 0];
+        }
+
+        $textRun = $section->addTextRun($paraStyle);
         $textRun->addText($text, [
-            'name' => $config['font_family'],
-            'size' => $config['font_size'],
-            'bold' => true,
+            'name'   => $config['font_family'],
+            'size'   => $config['font_size'],
+            'bold'   => $s['bold'],
+            'italic' => $s['italic'],
         ]);
     }
 }

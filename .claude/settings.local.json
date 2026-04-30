@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xxd test_output.docx)",
+      "Bash(curl -s -X POST http://localhost:8080/format -H 'Content-Type: application/json' --data-binary @test_payload.json -o test_output2.docx -w 'HTTP_STATUS:%{http_code} SIZE:%{size_download}')",
+      "Bash(python -c ' *)"
+    ]
+  }
+}
