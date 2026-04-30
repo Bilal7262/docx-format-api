@@ -60,8 +60,51 @@ if ($method === 'POST' && $path === '/format') {
 
     header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Length: ' . mb_strlen($docxBytes, '8bit'));
+    header('Content-Length: ' . strlen($docxBytes));
     echo $docxBytes;
+    exit;
+}
+
+// ── GET /essay/{id} ──────────────────────────────────────────────────────────
+
+if ($method === 'GET' && preg_match('#^/essay/(\d+)$#', $path, $m)) {
+    $id    = $m[1];
+    $token = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL            => 'https://backend.skyscrapersnow.com/aiEssayWriterApi/generate-essay-document/' . $id,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_HTTPHEADER     => [
+            'Accept: application/json',
+            'Authorization: ' . $token,
+        ],
+    ]);
+    $body        = curl_exec($ch);
+    $status      = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    $err         = curl_error($ch);
+    curl_close($ch);
+
+    if ($err) {
+        http_response_code(502);
+        echo json_encode(['error' => 'cURL error: ' . $err]);
+        exit;
+    }
+
+    while (ob_get_level()) ob_end_clean();
+
+    http_response_code($status);
+    if (str_starts_with($body, 'PK')) {
+        header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        header('Content-Disposition: attachment; filename="essay_' . $id . '.docx"');
+        header('Content-Length: ' . strlen($body));
+    } else {
+        header('Content-Type: ' . ($contentType ?: 'application/json'));
+    }
+    echo $body;
     exit;
 }
 
@@ -117,6 +160,10 @@ textarea{resize:vertical;min-height:120px}
 .section-label{font-size:.75rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;margin-top:24px}
 .dl-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:#1a1a2e;color:#fff;border-radius:5px;font-size:.88rem;font-weight:600;cursor:pointer;border:none;margin-top:10px;text-decoration:none}
 .dl-btn:hover{background:#2d2d4e}
+.auth-bar{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.auth-bar label{font-size:.85rem;font-weight:700;color:#444;white-space:nowrap;margin:0}
+.auth-bar input{flex:1;padding:7px 10px;border:1px solid #ccc;border-radius:5px;font-size:.82rem;font-family:monospace;background:#fafafa}
+.auth-bar input:focus{outline:none;border-color:#61affe;background:#fff}
 </style>
 </head>
 <body>
@@ -124,6 +171,11 @@ textarea{resize:vertical;min-height:120px}
 <div class="topbar">docx-formatter <span>PHP API — Interactive Docs</span></div>
 
 <div class="container">
+
+<div class="auth-bar">
+  <label>Authorization</label>
+  <input id="auth-token" type="text" value="Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIzIiwianRpIjoiZDNiNDY0MmI4Nzc1MTRjZWUxYjg4MWQ4M2I1ZDFjYTZjMTQxNDM5YmE2OGE2NDRiNTk2NDczMWU1Yjg3NDU3ZmZlYjA0ODk4MGFiNWNiYmYiLCJpYXQiOjE3Nzc1MzIyMTcuOTY0MzQwOTI1MjE2Njc0ODA0Njg3NSwibmJmIjoxNzc3NTMyMjE3Ljk2NDM0ODA3Nzc3NDA0Nzg1MTU2MjUsImV4cCI6MTc4MjcxNjIxNy45NTg1Mjg5OTU1MTM5MTYwMTU2MjUsInN1YiI6IjU0OTIzMCIsInNjb3BlcyI6W119.AyTAje8bv8QNEyaLUKsYF76hwe8TBg48lWbJU8KleoDSHjQeOW0148xH-O6FLM3PmumXjKgSpQnJdxz56OeSGxOd5qrHi1odNT2MeHDCx2KoktLemZUt2XWhI7Yfpc4_T4rClZ44qPonq5f7_AWGBVZ0M_WaUvSv8baN2ce5VbUrU078w5-2No1ZiqKseAcZdWifFO2Hu2SgMwq-aSwVBhCYwkM0VFy4oS2G_rFhkBxtg_aFazYbnqihnSALIV-yP-QYLEmNSSwwGtj6fQUfyQmU21n95JITcEMwgS4e_liuNBEoe1hn11Lo7PMdBJipBjWn32ySNSCEAW3m6SyCgzHM-BX-Cc_9Q1sBECyV4iUyrV2sYJ9elndzUmUR6GAnXTWrSvinPaMDO3NZGel0vgoz6SIBM_4D3_OXnJD8tyChjhWuuf5o5joT1nmfp8iEpI0QRYJh-dE8yb4g-rLo08FT8dyUgJ5v38SxcKiUemzqcnW0pSN8I3pIdw3TPiJKodCHG01ykrtoFqsCc3MqML5GWfsenlJvtutHq1J9z2vkb0p0AYobHXLWDVNkpUG4j5Dj5La5MHmZFbc641Vobkdqbg-5I-UpyWqnGuOJDYDnPX_8M9ao8q0vE05O--g28akWwBa2iIMpMifKvA_Y3b3icedESfLUGmhITB444hI">
+</div>
 
 <!-- POST /format -->
 <div class="endpoint">
@@ -140,7 +192,7 @@ textarea{resize:vertical;min-height:120px}
     <select id="f-style">
       <option value="APA 7">APA 7</option>
       <option value="MLA 9">MLA 9</option>
-      <option value="Chicago Author-Date">Chicago Author-Date</option>
+      <option value="Chicago 17">Chicago 17</option>
       <option value="Harvard">Harvard</option>
     </select>
 
@@ -254,6 +306,31 @@ Further longitudinal studies are needed to establish causation.</textarea>
   </div>
 </div>
 
+<!-- GET /essay/{id} -->
+<div class="endpoint">
+  <div class="ep-header" onclick="toggle(this)">
+    <span class="badge get">GET</span>
+    <span class="ep-path">/essay/{id}</span>
+    <span class="ep-desc">Fetch essay data from backend</span>
+  </div>
+  <div class="ep-body">
+    <div class="section-label">Parameters</div>
+    <label>Document ID</label>
+    <input id="essay-id" type="text" value="1626632" style="max-width:220px">
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+      <span style="font-size:.78rem;color:#888;align-self:center">Quick fill:</span>
+      <button onclick="document.getElementById('essay-id').value='1626632'" style="background:#f0f4ff;border:1px solid #c8d4f0;color:#1a1a2e;border-radius:4px;padding:4px 10px;font-size:.78rem;cursor:pointer">1626632 — MLA</button>
+      <button onclick="document.getElementById('essay-id').value='1626652'" style="background:#f0f4ff;border:1px solid #c8d4f0;color:#1a1a2e;border-radius:4px;padding:4px 10px;font-size:.78rem;cursor:pointer">1626652 — APA</button>
+      <button onclick="document.getElementById('essay-id').value='1626654'" style="background:#f0f4ff;border:1px solid #c8d4f0;color:#1a1a2e;border-radius:4px;padding:4px 10px;font-size:.78rem;cursor:pointer">1626654 — Chicago</button>
+      <button onclick="document.getElementById('essay-id').value='1626662'" style="background:#f0f4ff;border:1px solid #c8d4f0;color:#1a1a2e;border-radius:4px;padding:4px 10px;font-size:.78rem;cursor:pointer">1626662 — Harvard</button>
+    </div>
+    <div class="execute-row">
+      <button class="btn-get" onclick="executeEssayFetch()">▶  Execute</button>
+    </div>
+    <div id="essay-response" class="response-box"></div>
+  </div>
+</div>
+
 <!-- GET /health -->
 <div class="endpoint">
   <div class="ep-header" onclick="toggle(this)">
@@ -327,9 +404,10 @@ async function executeFormat() {
   box.textContent = 'Sending request...';
 
   try {
+    const token = document.getElementById('auth-token').value.trim();
     const res = await fetch('/format', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': token }) },
       body: JSON.stringify(payload),
     });
 
@@ -362,12 +440,44 @@ async function executeFormat() {
   btn.innerHTML = '▶  Execute';
 }
 
+async function executeEssayFetch() {
+  const id  = document.getElementById('essay-id').value.trim();
+  const box = document.getElementById('essay-response');
+  if (!id) { box.className = 'response-box show error'; box.textContent = '❌  Document ID required'; return; }
+
+  box.className = 'response-box show';
+  box.textContent = 'Fetching...';
+  const token = document.getElementById('auth-token').value.trim();
+  try {
+    const res = await fetch('/essay/' + id, token ? { headers: { 'Authorization': token } } : {});
+    const ct  = res.headers.get('Content-Type') || '';
+
+    if (ct.includes('wordprocessingml') || ct.includes('octet-stream')) {
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'essay_' + id + '.docx'; a.click();
+      URL.revokeObjectURL(url);
+      box.className = 'response-box show downloading';
+      box.textContent = '✅  Downloaded: essay_' + id + '.docx\n\nSize: ' + (blob.size / 1024).toFixed(1) + ' KB';
+    } else {
+      const data = await res.json();
+      box.className = 'response-box show ' + (res.ok ? 'success' : 'error');
+      box.textContent = 'HTTP ' + res.status + '\n\n' + JSON.stringify(data, null, 2);
+    }
+  } catch (e) {
+    box.className = 'response-box show error';
+    box.textContent = '❌  ' + e.message;
+  }
+}
+
 async function executeGet(path, boxId) {
   const box = document.getElementById(boxId);
   box.className = 'response-box show';
   box.textContent = 'Sending request...';
   try {
-    const res = await fetch(path);
+    const token = document.getElementById('auth-token').value.trim();
+    const res = await fetch(path, token ? { headers: { 'Authorization': token } } : {});
     const data = await res.json();
     box.className = 'response-box show success';
     box.textContent = 'HTTP ' + res.status + '\n\n' + JSON.stringify(data, null, 2);

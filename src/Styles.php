@@ -41,7 +41,7 @@ class Styles
             'citation_name'            => 'MLA 9th Edition',
             'in_text_example'          => '(Author Page#) — no comma, e.g., (Smith 23)',
         ],
-        'Chicago Author-Date' => [
+        'Chicago 17' => [
             'font_family'              => 'Times New Roman',
             'font_size'                => 12,
             'margin_inches'            => 1.0,
@@ -56,7 +56,7 @@ class Styles
             'references_double_spaced' => false,
             'hanging_indent_inches'    => 0.5,
             'body_first_line_indent_inches' => 0.5,
-            'citation_name'            => 'Chicago Author-Date',
+            'citation_name'            => 'Chicago 17',
             'in_text_example'          => '(Author Year, Page#) — e.g., (Smith 2023, 14)',
         ],
         'Harvard' => [

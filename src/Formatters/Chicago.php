@@ -8,7 +8,7 @@ use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Shared\Converter;
 
 /**
- * Chicago Author-Date formatter.
+ * Chicago 17 formatter.
  *
  * Layout:
  *   - Title page: title centered ~1/3 down the page, then author / course / date.

@@ -13,7 +13,7 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 use App\Formatters\FormatterDispatcher;
 use App\Models\FormatRequest;
 
-$allStyles = ['APA 7', 'MLA 9', 'Chicago Author-Date', 'Harvard'];
+$allStyles = ['APA 7', 'MLA 9', 'Chicago 17', 'Harvard'];
 
 $sampleData = [
     'title'         => 'The Effects of Social Media on Mental Health',

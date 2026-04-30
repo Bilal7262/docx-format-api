@@ -115,6 +115,7 @@ class Base
 
     public static function parseBlocks(string $markdown): array
     {
+        $markdown = str_replace('\n', "\n", $markdown);
         $markdown = preg_replace('/<br\s*\/?>/i', "\n\n", $markdown);
 
         $blocks       = [];

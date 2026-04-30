@@ -43,7 +43,7 @@ class FormatRequest
 
     private function validateCitationStyle(string $style): string
     {
-        $allowed = ['APA 7', 'MLA 9', 'Chicago Author-Date', 'Harvard'];
+        $allowed = ['APA 7', 'MLA 9', 'Chicago 17', 'Harvard'];
         if (!in_array($style, $allowed, true)) {
             throw new \InvalidArgumentException(
                 'citation_style must be one of: ' . implode(', ', $allowed)

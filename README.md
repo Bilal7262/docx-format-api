@@ -1,6 +1,6 @@
 # docx-formatter (PHP)
 
-A PHP API that converts essay content into properly formatted `.docx` files supporting APA 7, MLA 9, Chicago Author-Date, and Harvard citation styles.
+A PHP API that converts essay content into properly formatted `.docx` files supporting APA 7, MLA 9, Chicago 17, and Harvard citation styles.
 
 ---
 
@@ -35,7 +35,7 @@ docx-formatter/
         ├── Base.php           # Shared utilities
         ├── Apa7.php           # APA 7th Edition
         ├── Mla9.php           # MLA 9th Edition
-        ├── Chicago.php        # Chicago Author-Date
+        ├── Chicago.php        # Chicago 17
         ├── Harvard.php        # Harvard
         └── FormatterDispatcher.php
 ```
@@ -73,7 +73,7 @@ composer generate
 # Single style (use exact style name with quotes)
 php scripts/generate.php "APA 7"
 php scripts/generate.php "MLA 9"
-php scripts/generate.php "Chicago Author-Date"
+php scripts/generate.php "Chicago 17"
 php scripts/generate.php "Harvard"
 
 # Custom output filename
@@ -121,7 +121,7 @@ Send essay content, receive a formatted `.docx` file download.
 
 | Field | Required | Description |
 |---|---|---|
-| `citation_style` | Yes | `APA 7` / `MLA 9` / `Chicago Author-Date` / `Harvard` |
+| `citation_style` | Yes | `APA 7` / `MLA 9` / `Chicago 17` / `Harvard` |
 | `title` | Yes | Essay title |
 | `body_markdown` | Yes | Body — `##` headings, `###` subheadings, `**bold**`, `*italic*` |
 | `references` | Yes | Array of `{ id, formatted }` |
@@ -148,7 +148,7 @@ curl -X POST http://localhost:8080/format \
 Returns valid `citation_style` values.
 
 ```json
-{ "citation_styles": ["APA 7", "Chicago Author-Date", "Harvard", "MLA 9"] }
+{ "citation_styles": ["APA 7", "Chicago 17", "Harvard", "MLA 9"] }
 ```
 
 ### `GET /health`
@@ -165,7 +165,7 @@ Returns valid `citation_style` values.
 |---|---|---|---|
 | APA 7 | Yes (student format) | Top-right, all pages | "References" (bold, centered) |
 | MLA 9 | No (first-page block) | "LastName #" top-right | "Works Cited" (centered) |
-| Chicago Author-Date | Yes, no number on it | Top-right, content pages | "References" (centered) |
+| Chicago 17 | Yes, no number on it | Top-right, content pages | "References" (centered) |
 | Harvard | Yes | Top-right, all pages | "Reference List" (centered) |
 
 ---

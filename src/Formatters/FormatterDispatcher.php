@@ -15,7 +15,7 @@ class FormatterDispatcher
     private static array $builders = [
         'APA 7'              => [Apa7::class,    'build'],
         'MLA 9'              => [Mla9::class,    'build'],
-        'Chicago Author-Date'=> [Chicago::class, 'build'],
+        'Chicago 17'         => [Chicago::class, 'build'],
         'Harvard'            => [Harvard::class, 'build'],
     ];
 
