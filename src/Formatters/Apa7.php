@@ -26,7 +26,7 @@ class Apa7
         $section = $phpWord->addSection();
         Base::setupSection($section, $config);
 
-        Base::addPageNumbers($section, $config);
+        self::addPageNumbers($section, $config);
         self::titlePage($section, $essay, $config);
         $section->addPageBreak();
         Base::addBody($section, $essay->bodyMarkdown, $config, [self::class, 'heading']);
@@ -34,6 +34,26 @@ class Apa7
         Base::addReferencesPage($section, $essay->references, $config);
 
         return Base::docToBytes($phpWord);
+    }
+
+    // ── Page numbers (APA: hidden on title page, starts at 1 on body) ────────
+
+    private static function addPageNumbers(Section $section, array $config): void
+    {
+        $alignment = str_contains($config['page_numbers']['position'], 'right') ? 'right' : 'center';
+        $fontStyle  = Base::fontStyle($config);
+        $paraStyle  = ['alignment' => $alignment];
+
+        // Start at 0: title page = 0 (hidden), body page 1 = 1, page 2 = 2 …
+        // Note: adding Header::FIRST automatically enables <w:titlePg/> (different first page)
+        $section->getStyle()->setPageNumberingStart(0);
+
+        // Empty first-page header — title page shows no page number
+        $section->addHeader(\PhpOffice\PhpWord\Element\Header::FIRST);
+
+        // Default header — shows on every page after the first
+        $header = $section->addHeader();
+        $header->addPreserveText('{PAGE}', $fontStyle, $paraStyle);
     }
 
     // ── Title page ────────────────────────────────────────────────────────────
