@@ -3,6 +3,7 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use App\Formatters\FormatterDispatcher;
+use App\Formatters\ReportFormatter;
 use App\Models\FormatRequest;
 use App\Styles;
 
@@ -57,6 +58,49 @@ if ($method === 'POST' && $path === '/format') {
     while (ob_get_level()) {
         ob_end_clean();
     }
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . strlen($docxBytes));
+    echo $docxBytes;
+    exit;
+}
+
+// ── POST /report ─────────────────────────────────────────────────────────────
+
+if ($method === 'POST' && $path === '/report') {
+    $body = file_get_contents('php://input');
+    $data = json_decode($body, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
+        http_response_code(422);
+        echo json_encode(['error' => 'Invalid JSON body']);
+        exit;
+    }
+
+    $title        = trim($data['title'] ?? '');
+    $bodyMarkdown = trim($data['body_markdown'] ?? '');
+    $authorName   = isset($data['author_name']) ? trim($data['author_name']) : null;
+    $date         = isset($data['date'])        ? trim($data['date'])        : null;
+
+    if ($title === '') {
+        http_response_code(422);
+        echo json_encode(['error' => 'title is required']);
+        exit;
+    }
+
+    if ($bodyMarkdown === '') {
+        http_response_code(422);
+        echo json_encode(['error' => 'body_markdown is required']);
+        exit;
+    }
+
+    $docxBytes = ReportFormatter::build($title, $bodyMarkdown, $authorName, $date);
+
+    $slug     = preg_replace('/[^a-z0-9]+/', '_', strtolower($title));
+    $filename = substr($slug, 0, 40) . '_report.docx';
+
+    while (ob_get_level()) ob_end_clean();
 
     header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -291,6 +335,52 @@ Further longitudinal studies are needed to establish causation.</textarea>
   </div>
 </div>
 
+<!-- POST /report -->
+<div class="endpoint">
+  <div class="ep-header" onclick="toggle(this)">
+    <span class="badge post">POST</span>
+    <span class="ep-path">/report</span>
+    <span class="ep-desc">Generate a plain formatted .docx report</span>
+  </div>
+  <div class="ep-body">
+
+    <div class="section-label">Parameters</div>
+
+    <label>title</label>
+    <input id="r-title" type="text" value="Quarterly Business Report">
+
+    <label>body_markdown</label>
+    <textarea id="r-body">## Executive Summary
+
+This report provides an overview of **Q1 2026** performance across all departments.
+
+## Findings
+
+Revenue increased by *15%* compared to the previous quarter.
+
+### Key Metrics
+
+- Total revenue: ***$2.4M***
+- New customers: **320**
+- Churn rate: *4.2%*
+
+## Recommendations
+
+Further investment in **digital marketing** channels is advised.
+
+## Conclusion
+
+Overall performance was *strong* and targets were met across all divisions.</textarea>
+
+    <div class="execute-row">
+      <button class="btn-exec" id="report-btn" onclick="executeReport()">▶  Execute</button>
+    </div>
+
+    <div id="report-response" class="response-box"></div>
+
+  </div>
+</div>
+
 <!-- GET /options -->
 <div class="endpoint">
   <div class="ep-header" onclick="toggle(this)">
@@ -424,6 +514,52 @@ async function executeFormat() {
       a.click();
       URL.revokeObjectURL(url);
 
+      box.className = 'response-box show downloading';
+      box.innerHTML = '✅  Success — file downloaded: ' + filename + '\n\nSize: ' + (blob.size / 1024).toFixed(1) + ' KB\nContent-Type: ' + res.headers.get('Content-Type');
+    } else {
+      const data = await res.json();
+      box.className = 'response-box show error';
+      box.textContent = '❌  Error ' + res.status + '\n\n' + JSON.stringify(data, null, 2);
+    }
+  } catch (e) {
+    box.className = 'response-box show error';
+    box.textContent = '❌  Network error: ' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '▶  Execute';
+}
+
+async function executeReport() {
+  const btn = document.getElementById('report-btn');
+  const box = document.getElementById('report-response');
+
+  const payload = {
+    title:         document.getElementById('r-title').value,
+    body_markdown: document.getElementById('r-body').value,
+  };
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating...';
+  box.className = 'response-box show';
+  box.textContent = 'Sending request...';
+
+  try {
+    const token = document.getElementById('auth-token').value.trim();
+    const res = await fetch('/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': token }) },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      const blob = await res.blob();
+      const slug = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 40);
+      const filename = slug + '_report.docx';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
       box.className = 'response-box show downloading';
       box.innerHTML = '✅  Success — file downloaded: ' + filename + '\n\nSize: ' + (blob.size / 1024).toFixed(1) + ' KB\nContent-Type: ' + res.headers.get('Content-Type');
     } else {
