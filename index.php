@@ -3,6 +3,7 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use App\Formatters\FormatterDispatcher;
+use App\Formatters\PdfBuilder;
 use App\Formatters\ReportFormatter;
 use App\Models\FormatRequest;
 use App\Styles;
@@ -41,28 +42,40 @@ if ($method === 'POST' && $path === '/format') {
         exit;
     }
 
+    $outputFormat = strtolower($data['output_format'] ?? 'docx');
+    if (!in_array($outputFormat, ['docx', 'pdf'], true)) {
+        $outputFormat = 'docx';
+    }
+
     try {
-        $request   = new FormatRequest($data);
-        $essay     = $request->toEssayJson();
-        $docxBytes = FormatterDispatcher::formatEssay($essay, $request->citationStyle);
+        $request = new FormatRequest($data);
+        $essay   = $request->toEssayJson();
+        $bytes   = FormatterDispatcher::formatEssay($essay, $request->citationStyle, $outputFormat);
     } catch (\InvalidArgumentException $e) {
         http_response_code(422);
         echo json_encode(['error' => $e->getMessage()]);
         exit;
+    } catch (\Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Generation failed: ' . $e->getMessage()]);
+        exit;
     }
 
     $slug     = preg_replace('/[^a-z0-9]+/', '_', strtolower($request->citationStyle));
-    $filename = $slug . '_essay.docx';
+    $filename = $slug . '_essay.' . $outputFormat;
 
-    // Clear any buffered output so nothing is prepended to the binary ZIP stream.
     while (ob_get_level()) {
         ob_end_clean();
     }
 
-    header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    $contentType = $outputFormat === 'pdf'
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    header('Content-Type: ' . $contentType);
     header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Length: ' . strlen($docxBytes));
-    echo $docxBytes;
+    header('Content-Length: ' . strlen($bytes));
+    echo $bytes;
     exit;
 }
 
@@ -95,17 +108,34 @@ if ($method === 'POST' && $path === '/report') {
         exit;
     }
 
-    $docxBytes = ReportFormatter::build($title, $bodyMarkdown, $authorName, $date);
+    $outputFormat = strtolower($data['output_format'] ?? 'docx');
+    if (!in_array($outputFormat, ['docx', 'pdf'], true)) {
+        $outputFormat = 'docx';
+    }
+
+    try {
+        $bytes = $outputFormat === 'pdf'
+            ? PdfBuilder::buildReport($title, $bodyMarkdown, $authorName, $date)
+            : ReportFormatter::build($title, $bodyMarkdown, $authorName, $date);
+    } catch (\Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Generation failed: ' . $e->getMessage()]);
+        exit;
+    }
 
     $slug     = preg_replace('/[^a-z0-9]+/', '_', strtolower($title));
-    $filename = substr($slug, 0, 40) . '_report.docx';
+    $filename = substr($slug, 0, 40) . '_report.' . $outputFormat;
 
     while (ob_get_level()) ob_end_clean();
 
-    header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    $contentType = $outputFormat === 'pdf'
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    header('Content-Type: ' . $contentType);
     header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Length: ' . strlen($docxBytes));
-    echo $docxBytes;
+    header('Content-Length: ' . strlen($bytes));
+    echo $bytes;
     exit;
 }
 
@@ -326,6 +356,12 @@ Further longitudinal studies are needed to establish causation.</textarea>
     <label>date <span class="opt">optional</span></label>
     <input id="f-date" type="text" value="April 27, 2026">
 
+    <label>output_format</label>
+    <select id="f-output-format">
+      <option value="docx">docx</option>
+      <option value="pdf">pdf</option>
+    </select>
+
     <div class="execute-row">
       <button class="btn-exec" id="exec-btn" onclick="executeFormat()">▶  Execute</button>
     </div>
@@ -371,6 +407,12 @@ Further investment in **digital marketing** channels is advised.
 ## Conclusion
 
 Overall performance was *strong* and targets were met across all divisions.</textarea>
+
+    <label>output_format</label>
+    <select id="r-output-format">
+      <option value="docx">docx</option>
+      <option value="pdf">pdf</option>
+    </select>
 
     <div class="execute-row">
       <button class="btn-exec" id="report-btn" onclick="executeReport()">▶  Execute</button>
@@ -471,11 +513,13 @@ async function executeFormat() {
   const btn = document.getElementById('exec-btn');
   const box = document.getElementById('format-response');
 
+  const outputFormat = document.getElementById('f-output-format').value;
   const payload = {
     citation_style: document.getElementById('f-style').value,
     title:          document.getElementById('f-title').value,
     body_markdown:  document.getElementById('f-body').value,
     references:     getReferences(),
+    output_format:  outputFormat,
   };
   const optional = {
     author_name: document.getElementById('f-author').value,
@@ -504,7 +548,7 @@ async function executeFormat() {
     if (res.ok) {
       const blob = await res.blob();
       const style = payload.citation_style.toLowerCase();
-      const filename = style + '_essay.docx';
+      const filename = style.replace(/[^a-z0-9]+/g,'_') + '_essay.' + outputFormat;
 
       // Auto-download
       const url = URL.createObjectURL(blob);
@@ -534,9 +578,11 @@ async function executeReport() {
   const btn = document.getElementById('report-btn');
   const box = document.getElementById('report-response');
 
+  const rOutputFormat = document.getElementById('r-output-format').value;
   const payload = {
     title:         document.getElementById('r-title').value,
     body_markdown: document.getElementById('r-body').value,
+    output_format: rOutputFormat,
   };
 
   btn.disabled = true;
@@ -555,7 +601,7 @@ async function executeReport() {
     if (res.ok) {
       const blob = await res.blob();
       const slug = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 40);
-      const filename = slug + '_report.docx';
+      const filename = slug + '_report.' + rOutputFormat;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();

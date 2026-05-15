@@ -13,18 +13,25 @@ use PhpOffice\PhpWord\Settings;
 class FormatterDispatcher
 {
     private static array $builders = [
-        'APA 7'              => [Apa7::class,    'build'],
-        'MLA 9'              => [Mla9::class,    'build'],
-        'Chicago 17'         => [Chicago::class, 'build'],
-        'Harvard'            => [Harvard::class, 'build'],
+        'APA 7'      => [Apa7::class,    'build'],
+        'MLA 9'      => [Mla9::class,    'build'],
+        'Chicago 17' => [Chicago::class, 'build'],
+        'Harvard'    => [Harvard::class, 'build'],
     ];
 
-    public static function formatEssay(EssayJSON $essay, string $styleKey): string
+    private static array $pdfBuilders = [
+        'APA 7'      => [PdfBuilder::class, 'buildApa7'],
+        'MLA 9'      => [PdfBuilder::class, 'buildMla9'],
+        'Chicago 17' => [PdfBuilder::class, 'buildChicago'],
+        'Harvard'    => [PdfBuilder::class, 'buildHarvard'],
+    ];
+
+    public static function formatEssay(EssayJSON $essay, string $styleKey, string $format = 'docx'): string
     {
         Settings::setOutputEscapingEnabled(true);
 
-        $config  = Styles::STYLES[$styleKey];
-        $builder = self::$builders[$styleKey];
-        return call_user_func($builder, $essay, $config);
+        $config   = Styles::STYLES[$styleKey];
+        $builders = $format === 'pdf' ? self::$pdfBuilders : self::$builders;
+        return call_user_func($builders[$styleKey], $essay, $config);
     }
 }
