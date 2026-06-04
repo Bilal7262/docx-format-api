@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/vendor/autoload.php';
 
+use App\Formatters\AiDetectorReportBuilder;
 use App\Formatters\FormatterDispatcher;
 use App\Formatters\PdfBuilder;
 use App\Formatters\ReportFormatter;
@@ -423,6 +424,75 @@ Overall performance was *strong* and targets were met across all divisions.</tex
   </div>
 </div>
 
+<!-- POST /ai-detector-report -->
+<div class="endpoint">
+  <div class="ep-header" onclick="toggle(this)">
+    <span class="badge post">POST</span>
+    <span class="ep-path">/ai-detector-report</span>
+    <span class="ep-desc">Generate AI detection report PDF</span>
+  </div>
+  <div class="ep-body">
+
+    <div class="section-label">Parameters</div>
+
+    <label>essay <span class="opt">JSON object — AI detector result payload</span></label>
+    <textarea id="ai-essay" style="min-height:260px;font-family:monospace;font-size:.78rem">{
+  "overall_score": 68,
+  "risk_level": "high",
+  "verdict": "68% of this essay reads as AI-generated. Paragraph 1 will likely flag on Turnitin AI.",
+  "model_attribution": {
+    "gpt4": 70,
+    "gemini": 20,
+    "claude": 10
+  },
+  "paragraphs": [
+    {
+      "index": 0,
+      "ai_score": 68,
+      "risk_level": "high",
+      "likely_model": "gpt4",
+      "excerpt": "This free AI essay checker..."
+    }
+  ],
+  "sentences": [
+    {
+      "text": "This free AI essay checker scans your writing sentence by sentence, showing you exactly what your professor's AI detection tool will flag.",
+      "type": "ai",
+      "confidence": 75
+    },
+    {
+      "text": "Paste any essay and get a professor detection risk score (High, Medium, or Low), plus sentence-level highlights and a paragraph breakdown in under 30 seconds.",
+      "type": "ai",
+      "confidence": 80
+    },
+    {
+      "text": "3 checks free per month, up to 3,000 words each.",
+      "type": "ai",
+      "confidence": 70
+    },
+    {
+      "text": "No sign-up required.",
+      "type": "hum",
+      "confidence": 25
+    }
+  ],
+  "findings": [
+    { "type": "bad",  "text": "Multiple AI markers in paragraph 1" },
+    { "type": "warn", "text": "High sentence uniformity detected" },
+    { "type": "warn", "text": "Use of obvious word choices" },
+    { "type": "ok",   "text": "Includes specific service details" }
+  ]
+}</textarea>
+
+    <div class="execute-row">
+      <button class="btn-exec" id="ai-report-btn" onclick="executeAiReport()">▶  Execute</button>
+    </div>
+
+    <div id="ai-report-response" class="response-box"></div>
+
+  </div>
+</div>
+
 <!-- GET /options -->
 <div class="endpoint">
   <div class="ep-header" onclick="toggle(this)">
@@ -653,6 +723,56 @@ async function executeEssayFetch() {
   }
 }
 
+async function executeAiReport() {
+  const btn = document.getElementById('ai-report-btn');
+  const box = document.getElementById('ai-report-response');
+
+  let essayData;
+  try {
+    essayData = JSON.parse(document.getElementById('ai-essay').value);
+  } catch (e) {
+    box.className = 'response-box show error';
+    box.textContent = '❌  Invalid JSON in essay field: ' + e.message;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating...';
+  box.className = 'response-box show';
+  box.textContent = 'Sending request...';
+
+  try {
+    const token = document.getElementById('auth-token').value.trim();
+    const res = await fetch('/ai-detector-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': token }) },
+      body: JSON.stringify({ essay: essayData }),
+    });
+
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ai_detector_report.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+      box.className = 'response-box show downloading';
+      box.innerHTML = '✅  Downloaded: ai_detector_report.pdf\n\nSize: ' + (blob.size / 1024).toFixed(1) + ' KB';
+    } else {
+      const data = await res.json();
+      box.className = 'response-box show error';
+      box.textContent = '❌  Error ' + res.status + '\n\n' + JSON.stringify(data, null, 2);
+    }
+  } catch (e) {
+    box.className = 'response-box show error';
+    box.textContent = '❌  Network error: ' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '▶  Execute';
+}
+
 async function executeGet(path, boxId) {
   const box = document.getElementById(boxId);
   box.className = 'response-box show';
@@ -672,6 +792,54 @@ async function executeGet(path, boxId) {
 </body>
 </html>
 HTML;
+    exit;
+}
+
+// ── POST /ai-detector-report ──────────────────────────────────────────────────
+
+if ($method === 'POST' && $path === '/ai-detector-report') {
+    $raw  = file_get_contents('php://input');
+    $body = json_decode($raw, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($body)) {
+        http_response_code(422);
+        echo json_encode(['error' => 'Invalid JSON body']);
+        exit;
+    }
+
+    // Payload: { "essay": "<json-string>" } OR { "essay": {...} }
+    $essayRaw = $body['essay'] ?? null;
+    if ($essayRaw === null) {
+        http_response_code(422);
+        echo json_encode(['error' => 'essay field is required']);
+        exit;
+    }
+
+    if (is_string($essayRaw)) {
+        $data = json_decode($essayRaw, true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
+            http_response_code(422);
+            echo json_encode(['error' => 'essay must be a valid JSON string or object']);
+            exit;
+        }
+    } else {
+        $data = $essayRaw;
+    }
+
+    try {
+        $bytes = AiDetectorReportBuilder::build($data);
+    } catch (\Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'PDF generation failed: ' . $e->getMessage()]);
+        exit;
+    }
+
+    while (ob_get_level()) ob_end_clean();
+
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="ai_detector_report.pdf"');
+    header('Content-Length: ' . strlen($bytes));
+    echo $bytes;
     exit;
 }
 
