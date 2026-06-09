@@ -82,7 +82,7 @@ class EssayOutlineReportBuilder
 <div style="background:{$purpleDim};border:1.5px solid {$purpleBdr};border-radius:10px;
             padding:16px 18px;margin-bottom:14px">
   <div style="color:{$purpleBdr};font-size:7.5pt;font-weight:bold;letter-spacing:1.2px;
-              text-transform:uppercase;margin-bottom:8px">&#10003; Thesis Statement</div>
+              text-transform:uppercase;margin-bottom:8px">+ Thesis Statement</div>
   <p style="color:#ddd;font-size:10pt;font-style:italic;line-height:1.65;margin:0">{$t}</p>
 </div>
 HTML;
@@ -123,7 +123,6 @@ HTML : '';
     <td style="padding-left:10px">
       <span style="color:#fff;font-size:10.5pt;font-weight:bold">{$title}</span>
     </td>
-    <td style="width:16px;text-align:right;color:#444;font-size:12pt">&#8964;</td>
   </tr></table>
   {$bulletsBlock}
 </div>
