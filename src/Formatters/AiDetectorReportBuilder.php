@@ -67,18 +67,12 @@ class AiDetectorReportBuilder
         // using a rotated half-mask — but dompdf doesn't support transforms either.
         // Best reliable approach: solid colored outer circle + dark inner circle.
         $scoreRing = <<<HTML
-<table cellspacing="0" cellpadding="0" width="120" height="120">
-<tr><td style="width:120px;height:120px;text-align:center;vertical-align:middle;
-               background:{$riskColor};border-radius:60px;padding:0">
-  <table cellspacing="0" cellpadding="0" width="96" height="96" style="margin:0 auto">
-  <tr><td style="width:96px;height:96px;text-align:center;vertical-align:middle;
-                 background:#0A0A0F;border-radius:48px;padding:0">
-    <div style="color:{$riskColor};font-size:22pt;font-weight:bold;line-height:1">{$score}%</div>
-    <div style="color:#777;font-size:7pt;margin-top:3px;letter-spacing:.5px">AI DETECTED</div>
-  </td></tr>
-  </table>
-</td></tr>
-</table>
+<div style="width:200px;height:200px;border-radius:50%;background:{$riskColor};text-align:center;padding:9px 6px 6px">
+  <div style="border-radius:50%;background:#0A0A0F;margin:0 auto;padding: 59px 11px;">
+    <div style="color:{$riskColor};font-size:25pt;font-weight:bold;line-height:1">{$score}%</div>
+    <div style="color:#888;font-size:8pt;margin-top:6px;letter-spacing:1px">AI DETECTED</div>
+  </div>
+</div>
 HTML;
 
         // ── Stat boxes (table row) ────────────────────────────────────────────
@@ -227,7 +221,7 @@ HTML;
 <div class="card">
   <table width="100%" cellspacing="0" cellpadding="0">
   <tr>
-    <td width="130" valign="middle">{$scoreRing}</td>
+    <td width="215" valign="middle" style="padding-right:12px">{$scoreRing}</td>
     <td valign="middle" style="padding-left:18px">
 
       <!-- risk badge -->
