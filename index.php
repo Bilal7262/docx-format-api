@@ -3,6 +3,7 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use App\Formatters\AiDetectorReportBuilder;
+use App\Formatters\EssayOutlineReportBuilder;
 use App\Formatters\FormatterDispatcher;
 use App\Formatters\PdfBuilder;
 use App\Formatters\ReportFormatter;
@@ -493,6 +494,31 @@ Overall performance was *strong* and targets were met across all divisions.</tex
   </div>
 </div>
 
+<!-- POST /essay-outline-report -->
+<div class="endpoint">
+  <div class="ep-header" onclick="toggle(this)">
+    <span class="badge post">POST</span>
+    <span class="ep-path">/essay-outline-report</span>
+    <span class="ep-desc">Generate essay outline report PDF</span>
+  </div>
+  <div class="ep-body">
+
+    <div class="section-label">Parameters</div>
+
+    <label>essay <span class="opt">JSON object — essay outline payload</span></label>
+    <textarea id="outline-essay" style="min-height:220px;font-family:monospace;font-size:.78rem">{
+  "essay": "Thesis Statement: Chess, as a strategic board game dating back centuries, not only serves as an intellectually stimulating pastime but also reflects cultural evolution, psychological dynamics, and educational advantages.<br />\n<br />\nI. Introduction<br />\n- Brief history of chess and its origins.<br />\n- Importance of chess in various cultures throughout history.<br />\n<br />\nII. The Evolution of Chess<br />\n- Transition of chess from a regional pastime in India to a global phenomenon.<br />\n- Significant changes in chess rules and strategies over centuries.<br />\n<br />\nIII. Chess as a Reflection of Cultural and Historical Contexts<br />\n- Impact of historical events on the development and promotion of chess.<br />\n- Chess as a symbol of intellectual prowess and strategic thinking in different societies.<br />\n<br />\nIV. Psychological Benefits of Playing Chess<br />\n- Enhancement of cognitive abilities such as memory, problem-solving, and concentration.<br />\n- The role of chess in promoting mental well-being and stress management.<br />\n<br />\nV. Educational Advantages of Chess<br />\n- Chess as a tool for fostering critical thinking and decision-making skills in students.<br />\n- Programs and initiatives that integrate chess into educational curricula for skill development.<br />\n<br />\nVI. Conclusion<br />\n- Recapitulation of the enduring significance of chess across cultural, psychological, and educational dimensions.<br />\n- The lasting impact of chess on personal growth and societal progress."
+}</textarea>
+
+    <div class="execute-row">
+      <button class="btn-exec" id="outline-btn" onclick="executeOutlineReport()">&#9654;  Execute</button>
+    </div>
+
+    <div id="outline-response" class="response-box"></div>
+
+  </div>
+</div>
+
 <!-- GET /options -->
 <div class="endpoint">
   <div class="ep-header" onclick="toggle(this)">
@@ -773,6 +799,56 @@ async function executeAiReport() {
   btn.innerHTML = '▶  Execute';
 }
 
+async function executeOutlineReport() {
+  const btn = document.getElementById('outline-btn');
+  const box = document.getElementById('outline-response');
+
+  let payload;
+  try {
+    payload = JSON.parse(document.getElementById('outline-essay').value);
+  } catch (e) {
+    box.className = 'response-box show error';
+    box.textContent = '❌  Invalid JSON: ' + e.message;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating...';
+  box.className = 'response-box show';
+  box.textContent = 'Sending request...';
+
+  try {
+    const token = document.getElementById('auth-token').value.trim();
+    const res = await fetch('/essay-outline-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': token }) },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'essay_outline_report.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+      box.className = 'response-box show downloading';
+      box.innerHTML = '✅  Downloaded: essay_outline_report.pdf\n\nSize: ' + (blob.size / 1024).toFixed(1) + ' KB';
+    } else {
+      const data = await res.json();
+      box.className = 'response-box show error';
+      box.textContent = '❌  Error ' + res.status + '\n\n' + JSON.stringify(data, null, 2);
+    }
+  } catch (e) {
+    box.className = 'response-box show error';
+    box.textContent = '❌  Network error: ' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '&#9654;  Execute';
+}
+
 async function executeGet(path, boxId) {
   const box = document.getElementById(boxId);
   box.className = 'response-box show';
@@ -838,6 +914,42 @@ if ($method === 'POST' && $path === '/ai-detector-report') {
 
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="ai_detector_report.pdf"');
+    header('Content-Length: ' . strlen($bytes));
+    echo $bytes;
+    exit;
+}
+
+// ── POST /essay-outline-report ────────────────────────────────────────────────
+
+if ($method === 'POST' && $path === '/essay-outline-report') {
+    $raw  = file_get_contents('php://input');
+    $body = json_decode($raw, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($body)) {
+        http_response_code(422);
+        echo json_encode(['error' => 'Invalid JSON body']);
+        exit;
+    }
+
+    $essay = $body['essay'] ?? null;
+    if ($essay === null || !is_string($essay) || trim($essay) === '') {
+        http_response_code(422);
+        echo json_encode(['error' => 'essay field is required (HTML string)']);
+        exit;
+    }
+
+    try {
+        $bytes = EssayOutlineReportBuilder::build($essay);
+    } catch (\Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'PDF generation failed: ' . $e->getMessage()]);
+        exit;
+    }
+
+    while (ob_get_level()) ob_end_clean();
+
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="essay_outline_report.pdf"');
     header('Content-Length: ' . strlen($bytes));
     echo $bytes;
     exit;
